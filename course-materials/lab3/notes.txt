@@ -1,0 +1,10 @@
+1. smoke:
+
+00 00 ...  00 c0 10 40 00 00 00 00 00
+|<---56---->|
+
+56 = 48 + 8
+48: the empty stack space allocated by "sub 0x30, rsp"
+8: the stack space for esp
+
+and the padding zeros are because the address is eight bytes wide

@@ -1,0 +1,40 @@
+jmpq *0x401b60(,%rax,8) is an indirect addressing, the real address is stored in $rax*8 + 0x401b60.
+
+The 4th bomb input and output number sequences are fibonacci
+input:    output:
+2	    2
+3	    3
+4	    5
+5	    8
+6	    13
+7	    21
+8	    34
+9	    55(0x37) <= this is what is wanted
+
+The 5th bomb is about multiple indirect addressing:
+There is an array in one piece of memory we'll meet, its layout is like this:
+-------------
+0   1	2   3 <=index
+-------------
+a   2	e   7 <=value
+
+-------------
+4   5	6   7
+-------------
+8   c	f   b
+
+-------------
+8   9	a   b
+-------------
+0   4	1   d
+
+-------------
+c   d	e   f
+-------------
+3   9	6   5
+
+Your task is to stop at 0xf(index 6) after exactly 12(0xc, ) steps. The values are the pointers(indexes) to the next element.
+
+So the visiting order is:
+
+7, b, d, 9, 4, 8, 0, a, 1, 2, e, 6, f

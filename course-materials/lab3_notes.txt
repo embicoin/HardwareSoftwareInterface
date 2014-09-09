@@ -1,0 +1,73 @@
+1. smoke:
+
+00 00 ...  00 c0 10 40 00 00 00 00 00
+|<---56---->|
+
+56 = 48 + 8
+48: the empty stack space allocated by "sub 0x30, rsp"
+8: the stack space for esp
+
+and the padding zeros are because the address is eight bytes wide
+
+2. fizz:
+
+after succeeding to jump to fizz function, the stack should be like this:
+
++|             |
+ |-------------|
+ |param(cookie)|
+ |-------------|
+ |      0      |<---rsp
+ |-------------|
+ |  ret addr   |
+ |-------------|
+-|             |
+
+at the head of fizz, there is:
+
+  sub 0x08, %rsp
+  ...
+  mov 0x10(%rsp), %rsi
+
+and then what %rsi stores is just the cookie parameter.
+
+3. bang:
+
+write the machine code to a file in order to be taken as input when debugging
+./sendstring < bang.txt > bang.bytes
+(don't be like this: echo `cat bang.txt | ./sendstring` > bang.bytes)
+
+leaveq:
+movq rbp, rsp
+pop rbp
+
+gdb using:
+i r: print all registers
+x/i $rip: print the next instruction
+x/10x $rsp: print the memory content
+ni: next instruction, not into subprocedure
+si: next instruction, into subprocedure
+
+Through gdb, we can get the rsp value when executing ret within the function of getbuf,
+and view the stack top content via x/10x(x/nx) to check whether our inception succeeds.
+
+The exploit source code is written in the file of bang.s.
+use
+  gcc -c bang.s -o bang.bytes
+
+to get the binary machine code of the exploit code, to be appended to bang.txt, just
+following the ret address in the bang.txt.
+
++|             |
+ |-------------|
+ |             |
+ |-------------|
+ |exploit code |<---(0x00007fffffbae0)
+ |-------------|
+ |  ret addr   |<---rsp(0x00007fffffbad8)
+ |-------------|
+-|             |
+
+And pay attention to the writing of asm code:
+push $0xffffffff means to push the number of 0xffffffff;
+push 0xffffffff means to push the content at the address of 0xffffffff.

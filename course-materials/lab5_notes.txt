@@ -1,0 +1,34 @@
+       /------------block 0-----------\/---block 1, 2, ...---\
++------+------------------------------+----------------------+------+
+|heap  |block |    payload     |block |   structure same     |heap  |
+|header|header|                |footer|     as block 0       |footer|
++------|------------------------------+----------------------+------+
+
+heap header: stores the pointer to the head of the free.
+
+heap footer: stores the TAG_PRECEDING_TAG for the future blocks allocated.
+
+When the whole space of the heap is allocated( with some memory fragments unused ), we must tag the heap footer as
+TAG_PRECEDING_TAG, as it'll become the the header of new blocks, and the 'TAG_PRECEDING_TAG' is checked in the
+function of coalesceFreeBlock(mm.c:186) to determine the end of the for loop.
+That is, if we call requestMoreSpace, the original heap footer will become the the header of new blocks, like this
+
+       /------------block 0-----------\/---block 1, 2, ...k--\/-------block k+1------\
++------+------+-----------------------+----------------------+------+----------+------+-------+
+|heap  |block |    payload     |block |   structure same     |block | payload  |block | heap  |
+|header|header|                |footer|     as block 0       |header|          |footer| footer|
++------|------+-----------------------+----------------------+------+----------+------+-------+
+                                                                ^   |                     ^   |
+                                                             original                  current|
+                                                            heap footer,              heap footer
+                                                                    |                         |
+                                                             current|                         |
+                                                            block header                      |
+                                                                    \--newly allocated space--/
+
+                                                                    both block header and heap header are of WORD_SIZE
+
+In words, if the whole heap has been allocated, mark the heap footer as TAG_PRECEDING_TAG; if there is block left, mark the left block's header as TAG_PRECEDING_TAG.
+
+Within the coalesceFreeBlock, if the size is different, we will call removeFreeBlock(mm.c:221), so within mm_free, we
+must call insertFreeBlock previous to coalesceFreeBlock, so as to requestMoreSpace.
